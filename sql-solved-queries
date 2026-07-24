@@ -1,0 +1,17 @@
+-- 1. Top 10 products by total sales.
+-- 2. Top 10 retailers by revenue.
+-- 3. Average operating margin by retailer.
+-- 4. Monthly sales trend.
+-- 5. Products with the highest operating profit.
+-- 6. Average units sold by product.
+-- 7. Revenue by sales method.
+-- 8. Rank products by total sales using RANK().
+-- 9. Find the top-selling product in each region using ROW_NUMBER().
+-- 10. Calculate the running total of sales by invoice date.
+-- 11. Calculate each retailer's percentage contribution to total sales.
+-- 12. Categorize products into Low, Medium, and High sales using CASE.
+-- 13. Find products with sales above the average sales.
+-- 14. Find the second-highest retailer by revenue using DENSE_RANK().
+-- 15. Divide products into four sales quartiles using NTILE(4).
+-- 16. Find the retailer with the highest average operating margin.
+-- 17. Create a sales summary report showing:
