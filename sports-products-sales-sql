@@ -1,0 +1,344 @@
+CREATE TABLE sports_sales (
+    retailer VARCHAR(100),
+    retailer_id INT,
+    invoice_date DATE,
+    region VARCHAR(100),
+    state VARCHAR(100),
+    city VARCHAR(100),
+    product VARCHAR(150),
+    price_per_unit NUMERIC(10,2),
+    units_sold INT,
+    total_sales NUMERIC(12,2),
+    operating_profit NUMERIC(12,2),
+    operating_margin NUMERIC(6,2),
+    sales_method VARCHAR(50),
+    sales_method_id INT,
+    product_id INT,
+    city_id INT
+);
+
+SELECT * FROM sports_sales
+
+-- 1. Top 10 products by total sales.
+SELECT * FROM sports_sales
+
+SELECT product,
+ROUND(SUM(total_sales),2) AS total_sales
+FROM sports_sales
+GROUP BY product
+ORDER BY total_sales DESC
+LIMIT 10;
+
+-- 2. Top 10 retailers by revenue.
+SELECT * FROM sports_sales
+
+SELECT 
+retailer_id,
+ROUND(SUM(total_sales),2) AS revenue_sales
+FROM sports_sales
+GROUP BY retailer_id
+ORDER BY revenue_sales DESC
+LIMIT 10;
+
+-- 3. Average operating margin by retailer.
+SELECT * FROM sports_sales
+
+SELECT 
+retailer_id,
+ROUND(AVG(operating_margin),2) AS average_operating
+FROM sports_sales
+GROUP BY retailer_id
+ORDER BY average_operating DESC
+
+----------------           ----------------
+
+SELECT 
+retailer_id,
+operating_profit,
+ROUND(AVG(operating_margin),2) AS average_operating
+FROM sports_sales
+GROUP BY retailer_id, operating_profit
+ORDER BY average_operating DESC
+
+-- 4. Monthly sales trend.
+SELECT * FROM sports_sales
+
+SELECT distinct product,
+month_name,
+ROUND(SUM(total_sales),2) AS total_sales
+FROM sports_sales
+GROUP BY product, month_name
+ORDER BY total_sales DESC
+LIMIT 10;
+
+----------------           ----------------
+
+SELECT
+    EXTRACT(YEAR FROM invoice_date) AS year,
+    EXTRACT(MONTH FROM invoice_date) AS month,
+    ROUND(SUM(total_sales), 2) AS total_sales
+FROM sports_sales
+GROUP BY
+    EXTRACT(YEAR FROM invoice_date),
+    EXTRACT(MONTH FROM invoice_date)
+ORDER BY
+    year,
+    month;
+	
+-- 5. Products with the highest operating profit.
+SELECT * FROM sports_sales
+
+SELECT product,
+operating_margin,
+ROUND(max(operating_profit),2) AS highest_operating
+FROM sports_sales
+GROUP BY  product, operating_margin
+ORDER BY highest_operating DESC
+
+
+-- 6. Average units sold by product.
+SELECT * FROM sports_sales
+
+SELECT product,
+ROUND(avg(units_sold), 2) AS Average_units_sold
+FROM sports_sales
+GROUP BY product
+ORDER BY Average_units_sold DESC
+
+-- 7. Revenue by sales method.
+SELECT * FROM sports_sales
+
+SELECT 
+sales_method,
+COUNT(total_sales) AS Revenue_sales
+FROM sports_sales
+GROUP BY sales_method
+ORDER BY Revenue_sales DESC
+
+-- 8. Rank products by total sales using RANK().
+SELECT * FROM sports_sales
+
+SELECT
+    product,
+    ROUND(SUM(total_sales), 2) AS total_sales
+FROM sports_sales
+GROUP BY product
+ORDER BY total_sales DESC
+	
+----------------           ----------------
+
+SELECT
+    product,
+    ROUND(SUM(total_sales), 2) AS total_sales,
+    RANK() OVER (
+        ORDER BY SUM(total_sales) DESC
+    ) AS sales_rank
+FROM sports_sales
+GROUP BY product
+ORDER BY sales_rank;
+
+
+-- 9. Find the top-selling product in each region using ROW_NUMBER().
+SELECT * FROM sports_sales
+
+SELECT
+    product,
+	region,
+    ROUND(SUM(total_sales), 2) AS total_sales
+FROM sports_sales
+GROUP BY product, region
+ORDER BY total_sales DESC
+	
+----------------           ----------------
+
+WITH product_sales AS (
+    SELECT
+        region,
+        product,
+        SUM(total_sales) AS total_sales,
+        ROW_NUMBER() OVER(
+            PARTITION BY region
+            ORDER BY SUM(total_sales) DESC
+        ) AS row_num
+    FROM sports_sales
+    GROUP BY region, product
+)
+
+SELECT
+    region,
+    product,
+    total_sales
+FROM product_sales
+WHERE row_num = 1;
+
+-- 10. Calculate the running total of sales by invoice date.
+SELECT * FROM sports_sales
+
+SELECT 
+invoice_date,
+ROUND(SUM(total_sales), 2) AS total_sales
+FROM sports_sales
+GROUP BY invoice_date
+ORDER BY total_sales
+
+----------------           ----------------
+
+SELECT product_id,
+invoice_date,
+ROUND(SUM(total_sales), 2) AS total_sales
+FROM sports_sales
+GROUP BY product_id, invoice_date
+ORDER BY total_sales
+
+-- 11. Calculate each retailer's percentage contribution to total sales.
+SELECT * FROM sports_sales
+
+SELECT retailer, 
+ROUND(SUM(total_sales),2) AS sales_percentage
+FROM sports_sales
+GROUP BY retailer
+ORDER BY sales_percentage DESC;
+
+
+----------------           ----------------
+
+SELECT
+    retailer,
+    ROUND(SUM(total_sales),2) AS total_sales,
+    ROUND(
+        SUM(total_sales) * 100.0 /
+        SUM(SUM(total_sales)) OVER (),
+        2
+    ) AS sales_percentage
+FROM sports_sales
+GROUP BY retailer
+ORDER BY sales_percentage DESC;
+
+
+
+-- 12. Categorize products into Low, Medium, and High sales using CASE.
+SELECT * FROM sports_sales
+
+SELECT
+    product,
+    ROUND(SUM(total_sales),2) AS total_sales,
+    CASE
+        WHEN SUM(total_sales) < 500000 THEN 'Low Sales'
+        WHEN SUM(total_sales) BETWEEN 500000 AND 2000000 THEN 'Medium Sales'
+        ELSE 'High Sales'
+    END AS sales_category
+FROM sports_sales
+GROUP BY product
+ORDER BY total_sales DESC;
+
+----------------           ----------------
+
+SELECT
+    product,
+    sales_category,
+ROUND(count(total_sales), 2) as High_Sales   
+FROM sports_sales
+group by product, sales_category
+order by High_Sales 
+
+-- 13. Find products with sales above the average sales.
+SELECT * FROM sports_sales
+
+SELECT product,
+ROUND(AVG(total_sales), 2) AS average_sales
+FROM sports_sales
+GROUP BY product
+ORDER BY average_sales DESC
+
+----------------           ----------------
+
+SELECT
+    product,
+    ROUND(SUM(total_sales),2) AS total_sales
+FROM sports_sales
+GROUP BY product
+HAVING SUM(total_sales) >
+(
+    SELECT AVG(product_sales)
+    FROM
+    (
+        SELECT
+            SUM(total_sales) AS product_sales
+        FROM sports_sales
+        GROUP BY product
+    ) AS avg_sales
+)
+ORDER BY total_sales DESC;
+
+-- 14. Find the second-highest retailer by revenue using DENSE_RANK().
+SELECT * FROM sports_sales
+
+WITH retailer_sales AS
+(
+    SELECT
+        retailer,
+        ROUND(SUM(total_sales),2) AS total_sales,
+        DENSE_RANK() OVER(
+            ORDER BY SUM(total_sales) DESC
+        ) AS sales_rank
+    FROM sports_sales
+    GROUP BY retailer
+)
+
+SELECT *
+FROM retailer_sales
+WHERE sales_rank = 2;
+
+----------------           ----------------
+
+SELECT
+        retailer,
+        ROUND(SUM(total_sales),2) AS total_sales,
+		ROUND(AVG(total_sales),2) AS AVG_sales
+FROM sports_sales
+GROUP BY retailer
+ORDER BY total_sales DESC
+		
+-- 15. Divide products into four sales quartiles using NTILE(4).
+SELECT * FROM sports_sales
+
+SELECT
+    product,
+    ROUND(SUM(total_sales),2) AS total_sales,
+    NTILE(4) OVER(
+        ORDER BY SUM(total_sales) DESC
+    ) AS sales_quartile
+FROM sports_sales
+GROUP BY product
+ORDER BY sales_quartile, total_sales DESC;
+
+-- 16. Find the retailer with the highest average operating margin.
+SELECT * FROM sports_sales
+
+SELECT
+    retailer,
+    ROUND(AVG(operating_margin),2) AS average_operating_margin
+FROM sports_sales
+GROUP BY retailer
+ORDER BY average_operating_margin DESC
+LIMIT 1;
+
+-- 17. Create a sales summary report showing:
+'Retailer
+Total Sales
+Total Units Sold
+Average Sales
+Highest Sale
+Lowest Sale'
+SELECT * FROM sports_sales
+
+SELECT
+    retailer,
+    ROUND(SUM(total_sales),2) AS total_sales,
+    SUM(units_sold) AS total_units_sold,
+    ROUND(AVG(total_sales),2) AS average_sales,
+    ROUND(MAX(total_sales),2) AS highest_sale,
+    ROUND(MIN(total_sales),2) AS lowest_sale
+FROM sports_sales
+GROUP BY retailer
+ORDER BY total_sales DESC;
